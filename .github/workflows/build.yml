@@ -36,6 +36,10 @@ jobs:
           libncursesw5-dev cmake libffi-dev libssl-dev \
           build-essential ccache libltdl-dev
 
+    - name: Accept Android SDK licenses
+      run: |
+        yes | buildozer android debug || true
+        
     - name: Build APK with Buildozer
       run: |
         cp buildozer_ayn_thor.spec buildozer.spec
@@ -43,6 +47,7 @@ jobs:
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: steamgrid-overlay-apk
         path: bin/*.apk
