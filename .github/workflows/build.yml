@@ -1,42 +1,48 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-apk:
+    runs-on: ubuntu-20.04
     
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
-    
-    - name: Install Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Install dependencies
+        python-version: '3.9'
+
+    - name: Install Buildozer and dependencies
       run: |
-        pip install buildozer cython==0.29.33
         sudo apt-get update
-        sudo apt-get install -y autoconf libtool pkg-config zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev build-essential
-    
-    - name: Build APK
+        sudo apt-get install -y python3-pip python3-setuptools git zip unzip openjdk-11-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+        pip3 install --upgrade pip
+        pip3 install --upgrade buildozer
+        pip3 install --upgrade cython==0.29.33
+
+    - name: Build with Buildozer
       run: |
         cp buildozer_ayn_thor.spec buildozer.spec
-        yes | buildozer android debug || buildozer android debug
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      if: always()
+        yes | buildozer -v android debug
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: steamgrid-overlay-apk
+        name: android-apk
         path: bin/*.apk
+
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/*.apk
+        tag_name: v1.0.${{ github.run_number }}
+        name: SteamGrid Overlay v1.0.${{ github.run_number }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
